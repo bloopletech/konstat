@@ -1,0 +1,251 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<widget version="1.4" minimumVersion="2.0">
+   <debug>off</debug>
+
+   <about-box>
+      <image>Images/about.png</image>
+   </about-box>
+
+   <preference name="sites">
+      <defaultValue>[{"url":"http://www.google.com/","desc":"Google"},{"url":"http://www.hotmail.com","desc":"Hotmail"}]</defaultValue>
+      <type>text</type>
+      <hidden>true</hidden>
+   </preference>
+
+   <preference name="checkInterval">
+      <defaultValue>10</defaultValue>
+      <description>Enter how often you want the widget to check the URL (in minutes).</description>
+      <type>text</type>
+      <title>Check Interval:</title>
+   </preference>
+   
+   <preference name="soundFile">
+      <defaultValue></defaultValue>
+      <description>File name of a sound to play when a check is run and the URL doesn't work. (Leave blank for no sound.)</description>
+      <type>text</type>
+      <title>Sound to play:</title>
+   </preference>
+
+
+   <window title="KonStat">
+      <name>mainWindow</name>
+      <width>20</width>
+      <height>20</height>
+      <visible>true</visible>
+
+      <contextMenuItems>
+         <menuItem title="Add Site" onSelect="editChecker(sites.length, '', '');" />
+      </contextMenuItems>
+   </window>
+
+   <timer>
+      <name>changeTimer</name>
+      <interval>600</interval>
+      <ticking>true</ticking>
+      <onTimerFired>
+      <!--
+         check();
+      //-->
+      </onTimerFired>
+   </timer>
+
+   <action trigger="onPreferencesChanged">
+   <!--
+      check();
+   //-->
+   </action>
+   
+   
+   <action trigger="onLoad">
+   <!--
+     include("json-min.js");
+
+     var SPACER = 4, RIGHTSPACE = 2;
+
+     var sites = new Array();
+     var currentVOffset = 0;
+     var maxWidth = 0;
+     var currentlyEditing = 0;
+
+     loadCheckers();
+     check();
+     
+     function loadCheckers()
+     {
+        sites = preferences.sites.value.parseJSON();
+
+        changeTimer.interval = preferences.checkInterval.value;
+
+        for(i = 0; i < sites.length; i++)
+        {
+           init(i);
+
+           currentVOffset += 23;
+           if(sites[i].rdesc.width > maxWidth) maxWidth = sites[i].rdesc.width;
+        }
+
+        mainWindow.width = maxWidth + 18 + 5 + SPACER + RIGHTSPACE;
+        mainWindow.height = 23 * sites.length;
+
+        currentVOffset = 0;
+
+        for(i = 0; i < sites.length; i++)
+        {
+           sites[i].status.hOffset = mainWindow.width - RIGHTSPACE - 18;
+           sites[i].rdesc.vOffset = currentVOffset + (sites[i].bg.height / 2) + (sites[i].rdesc.height / 4);
+
+           currentVOffset += 23;
+        }
+     }
+
+
+     function check()
+     {
+        changeTimer.interval = preferences.checkInterval.value;
+
+        for(i = 0; i < sites.length; i++)
+        {
+           sites[i].rurl.clear();
+           sites[i].rurl.location = sites[i].url;
+           sites[i].rurl.fetchAsync(got);
+        }
+     }
+
+     function got(url)
+     {
+        var status2 = url.response;
+        if(status2 != "200")
+        {
+           for(i = 0; i < sites.length; i++)
+           {
+              if(sites[i].url == url.location) sites[i].status.src = "Images/red.png";
+           }
+
+           if(preferences.soundFile.value != "")
+           {
+              play(preferences.soundFile.value);
+           }
+        }
+        else
+        {
+           for(i = 0; i < sites.length; i++)
+           {
+              if(sites[i].url == url.location) sites[i].status.src = "Images/green.png";
+           }
+
+        }
+     }
+     
+     function deleteChecker(i)
+     {
+        sites.splice(i, 1);
+
+        preferences.sites.value = sites.toJSONString();
+        mainWindow.height = 23 * sites.length;
+
+        maxWidth = 0;
+        for(i = 0; i < sites.length; i++)
+        {
+           if(sites[i].rdesc.width > maxWidth) maxWidth = sites[i].rdesc.width;
+        }
+
+        mainWindow.width = maxWidth + 18 + 5 + SPACER + RIGHTSPACE;
+
+        currentVOffset = 0;
+
+        for(i = 0; i < sites.length; i++)
+        {
+           sites[i].bg.vOffset = currentVOffset;
+           sites[i].rdesc.vOffset = currentVOffset + (sites[i].bg.height / 2) + (sites[i].rdesc.height / 4);
+           sites[i].status.vOffset = currentVOffset + 1;
+
+           sites[i].status.hOffset = mainWindow.width - RIGHTSPACE - 18;
+           currentVOffset += 23;
+        }
+     }
+
+     function editChecker(i, url, desc)
+     {
+        fields = [new FormField(), new FormField()];
+
+        fields[0].title = "URL:";
+        fields[0].description = "Enter the URL you want to check";
+        fields[0].defaultValue = url;
+        fields[0].type = "text";
+        
+        fields[1].title = "Description:";
+        fields[1].description = "Enter a short description for the above URL.";
+        fields[1].defaultValue = desc;
+        fields[1].type = "text";
+
+        temp = form(fields, "Edit Site");
+        if(temp == null) return;
+
+        currentVOffset = i * 23;
+
+        sites[i] = {};
+
+        sites[i].url = (temp[0] != null ? temp[0] : "");
+        sites[i].desc = (temp[1] != null ? temp[1] : "");
+
+        init(i);
+        
+        maxWidth = 0;
+        for(j = 0; j < sites.length; j++)
+        {
+           if(sites[j].rdesc.width > maxWidth) maxWidth = sites[j].rdesc.width;
+        }
+
+        mainWindow.width = maxWidth + 18 + 5 + SPACER + RIGHTSPACE;
+
+        currentVOffset = 0;
+        for(j = 0; j < sites.length; j++)
+        {
+           sites[j].status.hOffset = mainWindow.width - RIGHTSPACE - 18;
+           currentVOffset += 23;
+        }
+        
+        mainWindow.height = 23 * sites.length;
+
+        currentVOffset = i * 23;
+        sites[i].rdesc.vOffset = currentVOffset + (sites[i].bg.height / 2) + (sites[i].rdesc.height / 4);
+
+        preferences.sites.value = sites.toJSONString();
+
+        check();
+     }
+     
+     function init(i)
+     {
+        sites[i].rurl = new URL();
+        
+        sites[i].bg = new Image(mainWindow);
+        sites[i].bg.src = "images/background.png";
+        sites[i].bg.hOffset = 0;
+        sites[i].bg.vOffset = currentVOffset;
+        
+        sites[i].menu = [new MenuItem(), new MenuItem()];
+        sites[i].menu[0].title = 'Edit Site';
+        sites[i].menu[1].title = 'Delete Site';
+        eval("sites[i].menu[0].onSelect = function() { editChecker(" + i + ", \"" + sites[i].url + "\", \"" + sites[i].desc + "\"); };");
+        eval("sites[i].menu[1].onSelect = function() { if(prompt('Enter \\'yes\\' to delete site:') == 'yes') deleteChecker(" + i + "); };");
+        
+        sites[i].bg.contextMenuItems = sites[i].menu;
+        
+        sites[i].rdesc = new Text(mainWindow);
+        sites[i].rdesc.data = sites[i].desc;
+        sites[i].rdesc.color = "#FFFFFF";
+        sites[i].rdesc.size = 12;
+        sites[i].rdesc.vOffset = currentVOffset;
+        sites[i].rdesc.hOffset = 5;
+        sites[i].rdesc.alignment = "left";
+
+        sites[i].status = new Image(mainWindow);
+        sites[i].status.src = "images/yellow.png";
+        sites[i].status.hOffset = RIGHTSPACE;
+        sites[i].status.vOffset = currentVOffset + 1;
+        eval("sites[i].status.onMouseUp = function(event) { openURL(\"" + sites[i].url + "\"); };");
+     }
+   //-->
+   </action>
+</widget>
